@@ -63,14 +63,22 @@ cw_config = {
 }
 
 # 实例化程序 (AveragerProgram 标准接收 soccfg 和 config)
+# 实例化程序
 prog = ConstantToneProgram(soccfg, cw_config)
 
 print(f"[运行] 正在通过 DAC 通道 {cw_config['ch']} 输出 {cw_config['freq_mhz']} MHz 信号...")
 print("请在示波器 CH2 查看正弦波，按 Ctrl+C 可中断退出。")
 
-# 开始播放
+# 关键：用 load_program/run 启动硬件，不等待任何 ADC 数据
+prog.load_program(soc)
+soc.start_readout(0) # 如果没有 readout 甚至不需要这行，直接 run
+prog.run(soc)
+
+# 让主进程挂起保持输出，示波器观察完毕后按 Ctrl+C 退出
 try:
-    prog.acquire(soc, load_pulses=True, progress=False)
+    import time
+    while True:
+        time.sleep(1)
 except KeyboardInterrupt:
     print("\n[中断] 用户手动停止播放。")
 finally:
